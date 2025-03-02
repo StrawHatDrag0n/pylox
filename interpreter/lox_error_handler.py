@@ -4,23 +4,23 @@ from interpreter.lox_token_type import TokenType
 
 
 class LoxErrorHandler:
-    def __init__(self):
+    def __init__(self) -> None:
         self.HAS_ERROR = False
-        self.HAS_RUNTIME_ERROR = False;
+        self.HAS_RUNTIME_ERROR = False
 
-    def error_on_line(self, line: int, message: str):
+    def error_on_line(self, line: int, message: str) -> None:
         self.report(line, "", message)
 
-    def error_on_token(self, token: Token, message: str):
+    def error_on_token(self, token: Token, message: str) -> None:
         if token.token_type == TokenType.EOF:
             self.report(token.line, " at end", message)
         else:
             self.report(token.line, f" at '{token.lexeme}'", message)
 
-    def report(self, line: int, where: str, message: str):
+    def report(self, line: int, where: str, message: str) -> None:
         print(f'[line {line}]: Error {where}: {message}')
         self.HAS_ERROR = True
 
-    def runtime_error(self, error: LoxRuntimeError):
+    def runtime_error(self, error: LoxRuntimeError) -> None:
         print(f'{error.message} \n [line {error.token.line}]' )
         self.HAS_RUNTIME_ERROR = True

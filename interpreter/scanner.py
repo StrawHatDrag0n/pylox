@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, Optional
 
 from interpreter.lox_error_handler import LoxErrorHandler
 from interpreter.lox_token import Token
@@ -23,6 +23,7 @@ class Scanner:
         "true": TokenType.TRUE,
         "var": TokenType.VAR,
         "while": TokenType.WHILE,
+        "break": TokenType.BREAK
     }
 
     def __init__(self, error_handler: LoxErrorHandler, source_code: str) -> None:
@@ -40,7 +41,7 @@ class Scanner:
         self.tokens.append(Token(TokenType.EOF, "", None, self.line))
         return self.tokens
 
-    def scan_token(self):
+    def scan_token(self) -> None:
         c = self.advance()
         match c:
             case '?':
@@ -118,7 +119,7 @@ class Scanner:
                 else:
                     self.error_handler.error_on_line(self.line, "Unexpected character.")
 
-    def identifier(self):
+    def identifier(self) -> None:
         while self.is_alphanumeric(self.peek()):
             self.advance()
         text = self.source_code[self.start:self.current]
@@ -127,7 +128,7 @@ class Scanner:
             token_type = TokenType.IDENTIFIER
         self.add_token(token_type)
 
-    def number(self):
+    def number(self) -> None:
         while self.is_digit(self.peek()):
             self.advance()
 
@@ -138,7 +139,7 @@ class Scanner:
 
         self.add_token(TokenType.NUMBER, float(self.source_code[self.start:self.current]))
 
-    def string(self):
+    def string(self) -> None:
         while self.peek() != '"' and not self.is_at_end():
             if self.peek() == '\n':
                 self.line += 1
@@ -169,7 +170,7 @@ class Scanner:
         if self.is_at_end(): return '\0';
         return self.source_code[self.current]
 
-    def peek_next(self):
+    def peek_next(self) -> str:
         if self.current + 1 >= len(self.source_code): return '\0'
         return self.source_code[self.current + 1]
 
@@ -191,7 +192,7 @@ class Scanner:
         """
         return self.current >= len(self.source_code)
 
-    def add_token(self, token_type: TokenType, literal: object = None):
+    def add_token(self, token_type: TokenType, literal: Optional[Any] = None) -> None:
         """
         Adds token to the tokens list
         :param token_type:
@@ -201,7 +202,7 @@ class Scanner:
         token_text = self.source_code[self.start: self.current]
         self.tokens.append(Token(token_type, token_text, literal, self.line))
 
-    def advance(self):
+    def advance(self) -> str:
         """
         Consumes a character at current position in source_code
         :return:

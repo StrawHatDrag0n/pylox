@@ -8,8 +8,8 @@ class Token:
         self.lexeme = lexeme
         self.token_type = token_type
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.token_type} {self.lexeme} {self.literal}'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
