@@ -28,7 +28,7 @@ class ExpressionStmt(Stmt):
 		return visitor.visit_stmt(self)
 
 class FunctionStmt(Stmt):
-	def __init__(self, name: Optional[Token], params: List[Token], body: List[Stmt]):
+	def __init__(self, name: Token, params: List[Token], body: List[Stmt]):
 		self.name = name
 		self.params = params
 		self.body = body

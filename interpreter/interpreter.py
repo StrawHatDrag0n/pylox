@@ -248,10 +248,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_expression_stmt(self, expr: ExpressionStmt) -> None:
         return self.evaluate(expr.expression)
     
-    def visit_function_stmt(self, stmt: FunctionStmt) -> None:
+    def visit_function_stmt(self, stmt: FunctionStmt):
         functionObj = LoxFunction(stmt, self.environment, False)
         self.environment.define(stmt.name.lexeme, functionObj)
-        return None 
+        return functionObj 
 
     def visit_if_stmt(self, stmt: IfStmt) -> None:
         if self.is_truthy(self.evaluate(stmt.condition)):

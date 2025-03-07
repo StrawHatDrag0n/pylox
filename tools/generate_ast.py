@@ -15,7 +15,7 @@ class GenerateAST:
             "Ternary    -   condition: Expr, then_branch: Expr, else_branch: Expr",
             "Assign     -   name: Token, value: Expr",
             "Binary     -   left: Expr, operator: Token, right: Expr",
-            "Call       -   callee: Optional[Expr], paren: Token, arguments: List[Expr]",
+            "Call       -   callee: Expr, paren: Token, arguments: List[Expr]",
             "Get        -   obj: Expr, name: Token",
             "Grouping   -   expression: Expr",
             "Literal    -   value: Any",
@@ -30,7 +30,7 @@ class GenerateAST:
         GenerateAST.define_ast(output_dir, "Stmt", [
             "Block          -   statements: List[Stmt]",
             "Expression     -   expression: Expr",
-            "Function       -   name: Optional[Token], params: List[Token], body: List[Stmt]",
+            "Function       -   name: Token, params: List[Token], body: List[Stmt]",
             "Class          -   name: Token, superclass: Optional[VarExpr], methods: List[FunctionStmt]",
             "If             -   condition: Expr, thenBranch: Stmt, elsebranch: Optional[Stmt]",
             "Print          -   expression: Expr",

@@ -39,7 +39,7 @@ class BinaryExpr(Expr):
 		return visitor.visit_expr(self)
 
 class CallExpr(Expr):
-	def __init__(self, callee: Optional[Expr], paren: Token, arguments: List[Expr]):
+	def __init__(self, callee: Expr, paren: Token, arguments: List[Expr]):
 		self.callee = callee
 		self.paren = paren
 		self.arguments = arguments
