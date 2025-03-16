@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Tuple
 import typing
 
 from interpreter.break_exception import BreakException
@@ -24,7 +24,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.error_handler = error_handler
         self.globals = Environment()
         self.environment: Environment = self.globals
-        self.locals: dict[Expr, Optional[int]] = dict()
+        self.locals: dict[Expr, Tuple[int, int]] = dict()
 
         self.globals.define("clock", Clock())
 
@@ -178,9 +178,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_super_expr(self, expr: SuperExpr):
         distance: int = typing.cast(int, self.locals.get(expr, 0))
-        superclass: LoxClass = typing.cast(LoxClass, self.environment.get_at(distance, "super"))
+        superclass: LoxClass = typing.cast(LoxClass, self.environment.get_at(distance, "super", -1))
 
-        obj : LoxInstance = typing.cast(LoxInstance, self.environment.get_at(distance-1, "this"))
+        obj : LoxInstance = typing.cast(LoxInstance, self.environment.get_at(distance-1, "this", -1))
 
         method: Optional[LoxFunction] = superclass.find_method(expr.method.lexeme)
 
@@ -205,8 +205,8 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def execute(self, stmt: Stmt) -> None:
         return stmt.accept(self)
 
-    def resolve(self, expr: Expr, depth: int):
-        self.locals[expr] = depth
+    def resolve(self, expr: Expr, depth: int, idx: int):
+        self.locals[expr] = (depth, idx)
 
     def execute_block(self, statements: List[Stmt], environment: Environment) -> None:
         previous: Environment = self.environment
@@ -288,19 +288,18 @@ class Interpreter(ExprVisitor, StmtVisitor):
         return self.look_up_variable(expr.name, expr)
     
     def look_up_variable(self, name: Token, expr: Expr):
-        distance: Optional[int] =  self.locals.get(expr, None)
-        if distance is not None:
-            return self.environment.get_at(distance, name.lexeme)
+        distance, idx =  self.locals.get(expr, (None, None))
+        if distance is not None and idx is not None:
+            return self.environment.get_at(distance, name.lexeme, idx)
         else:
             return self.globals.get(name)
     
     def visit_assign_expr(self, expr: AssignExpr) -> Any:
         value =  self.evaluate(expr.value)
-        distance: Optional[int] = self.locals.get(expr, None)
-        if distance is not None:
-            self.environment.assign_at(distance, expr.name, expr)
+        distance, idx = self.locals.get(expr, (None, None))
+        if distance is not None and idx is not None:
+            self.environment.assign_at(distance, expr.name, expr, idx)
         else:
             self.globals.assign(expr.name, value)
-        self.environment.assign(expr.name, value)    
         return value
     

@@ -1,5 +1,6 @@
-from typing import List 
+from typing import List, Optional, Tuple 
 from collections import deque
+import typing
 from interpreter.class_type import ClassType
 from interpreter.expr import AssignExpr, BinaryExpr, CallExpr, Expr, ExprVisitor, GetExpr, GroupingExpr, LiteralExpr, LogicalExpr, SetExpr, SuperExpr, TernaryExpr, ThisExpr, UnaryExpr, VarExpr
 from interpreter.function_type import FunctionType
@@ -7,10 +8,18 @@ from interpreter.interpreter import Interpreter
 from interpreter.lox_token import Token
 from interpreter.stmt import BlockStmt, BreakStmt, ClassStmt, ExpressionStmt, FunctionStmt, IfStmt, PrintStmt, ReturnStmt, Stmt, StmtVisitor, VarStmt, WhileStmt
 
+
+class ScopeValue:
+    def __init__(self, resolved: bool = False, used: bool = False, token: Optional[Token] = None, idx: int = -1) -> None:
+        self.resolved = resolved
+        self.used = used
+        self.token = token
+        self.idx = idx
+
 class Resolver(ExprVisitor, StmtVisitor):
     def __init__(self, interpretor: Interpreter):
         self.interpretor: Interpreter = interpretor
-        self.scopes: deque[dict[str, bool]] = deque()
+        self.scopes: deque[dict[str, ScopeValue]] = deque()
         self.current_function = FunctionType.NONE
         self.current_class = ClassType.NONE
 
@@ -27,6 +36,9 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.scopes.append(dict())
 
     def end_scope(self):
+        for k, v in self.scopes[-1].items():
+            if not v.used and v.token:
+                self.interpretor.error_handler.error_on_token(v.token, f"The variable {k} is not used.")
         self.scopes.pop()
 
     def declare(self, name: Token):
@@ -37,17 +49,20 @@ class Resolver(ExprVisitor, StmtVisitor):
         if name.lexeme in scope:
             self.interpretor.error_handler.error_on_token(name, "Already a variable with this name in this scope.")
         
-        scope[name.lexeme] = False
+        scope[name.lexeme] = ScopeValue(False, False, name, len(scope) + 1)
 
     def define(self, name: Token):
         if len(self.scopes) == 0:
             return None
-        self.scopes[-1][name.lexeme] = True
+        scopeValue = self.scopes[-1][name.lexeme]
+        scopeValue.resolved = True
+        self.scopes[-1][name.lexeme] = scopeValue
 
     def resolve_local(self, expr: Expr, name: Token):
         for i, scope in enumerate(reversed(self.scopes)):
             if name.lexeme in scope:
-                self.interpretor.resolve(expr, i)
+                scope[name.lexeme].used = True
+                self.interpretor.resolve(expr, i, scope[name.lexeme].idx)
                 return None
 
     def resolve_function(self, func: FunctionStmt, type: FunctionType):
@@ -75,10 +90,10 @@ class Resolver(ExprVisitor, StmtVisitor):
 
         if stmt.superclass:
             self.begin_scope()
-            self.scopes[-1]['super'] = True
+            self.scopes[-1]['super'] = ScopeValue(True, False)
 
         self.begin_scope()
-        self.scopes[-1]['this'] = True
+        self.scopes[-1]['this'] = ScopeValue(True, False)
         for method in stmt.methods:
             declaration: FunctionType = FunctionType.METHOD
             if method.name.lexeme == "init":
@@ -111,8 +126,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         return None
 
     def visit_var_expr(self, expr: VarExpr):
-        if len(self.scopes) != 0 and self.scopes[-1].get(expr.name.lexeme) == False:
-            self.interpretor.error_handler.error_on_token(expr.name, "Can't real local variable in its own initializer.")
+        if all([len(self.scopes) != 0, 
+                self.scopes[-1].get(expr.name.lexeme), 
+                typing.cast(ScopeValue, self.scopes[-1].get(expr.name.lexeme)).resolved == False]):
+            self.interpretor.error_handler.error_on_token(expr.name, "Can't read local variable in its own initializer.")
         
         self.resolve_local(expr, expr.name)
         return None
@@ -213,3 +230,4 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_unary_expr(self, expr: UnaryExpr):
         self.resolve(expr.right)
         return None
+    
